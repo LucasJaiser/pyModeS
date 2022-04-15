@@ -3,6 +3,8 @@ import numpy as np
 import time
 import threading
 import traceback
+import json
+import requests
 
 COLUMNS = [
     ("call", 10),
@@ -187,6 +189,27 @@ class Screen(object):
                 self.screen.refresh()
                 self.draw_frame()
 
+    def push_acs_to_WebServer(self):
+
+        url = "https://WebserverLink/aircraft/"
+        token = "asdasdasdasd"
+        headers = {'Authorization': token, 'Content-Type': 'application/json'}
+        #header_contentype = {'Content-Type': 'application/json'}
+
+        for ac in self.acs:
+            #Convert Acs to JSON
+            json = json.dumps(ac.__dict__)
+            
+            #Push Ac to WebApi 
+            r = requests.put(url + ac.call, headers=headers, data=json)
+            #r = requests.put(url + ac.call, headers=header_contentype, auth=token, data=json)
+
+            #make sure everything is oke
+            if r == 200: 
+                print("Updated ac: " + ac.call)
+            if r > 400:
+                print("Error: Something went wrong\n" + r.content)
+
     def run(self, ac_pipe_out, exception_queue):
         local_buffer = []
         key_thread = threading.Thread(target=self.kye_handling)
@@ -203,7 +226,7 @@ class Screen(object):
 
                 for acs in local_buffer:
                     self.update_ac(acs)
-
+                    push_acs_to_WebServer()
                 local_buffer = []
 
                 self.update()
