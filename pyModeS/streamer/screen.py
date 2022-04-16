@@ -191,17 +191,27 @@ class Screen(object):
 
     def push_acs_to_WebServer(self):
 
-        url = "https://WebserverLink/aircraft/"
-        token = "asdasdasdasd"
-        headers = {'Authorization': token, 'Content-Type': 'application/json'}
+        url = "https://elitetigersradar.z4p.de/flights"
+        #token = "asdasdasdasd"
+        #headers = {'Authorization': token, 'Content-Type': 'application/json'}
         #header_contentype = {'Content-Type': 'application/json'}
 
         for ac in self.acs:
             #Convert Acs to JSON
-            json = json.dumps(ac.__dict__)
+            acData = {
+                "icao": ac.call,
+                "callsign": ac.call,
+                "x": ac.lon,
+                "y": ac.lat,
+                "altitude": ac.alt,
+                "groundspeed": ac.gs,
+                "trueairspeed": ac.tas,
+                "indicatedairspeed": ac.ias
+            }
+            json = json.dumps(acData)
             
             #Push Ac to WebApi 
-            r = requests.put(url + ac.call, headers=headers, data=json)
+            r = requests.post(url, data=json)
             #r = requests.put(url + ac.call, headers=header_contentype, auth=token, data=json)
 
             #make sure everything is oke
