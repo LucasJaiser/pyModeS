@@ -5,6 +5,7 @@ import threading
 import traceback
 import json
 import requests
+import logging
 
 COLUMNS = [
     ("call", 10),
@@ -195,30 +196,34 @@ class Screen(object):
         #token = "asdasdasdasd"
         #headers = {'Authorization': token, 'Content-Type': 'application/json'}
         #header_contentype = {'Content-Type': 'application/json'}
+        
+        try:
 
-        for ac in self.acs:
-            #Convert Acs to JSON
-            acData = {
-                "icao": ac.call,
-                "callsign": ac.call,
-                "x": ac.lon,
-                "y": ac.lat,
-                "altitude": ac.alt,
-                "groundspeed": ac.gs,
-                "trueairspeed": ac.tas,
-                "indicatedairspeed": ac.ias
-            }
-            json = json.dumps(acData)
-            
-            #Push Ac to WebApi 
-            r = requests.post(url, data=json)
-            #r = requests.put(url + ac.call, headers=header_contentype, auth=token, data=json)
+            for ac in self.acs:
+                #Convert Acs to JSON
+                acData = {
+                    "icao": ac.call,
+                    "callsign": ac.call,
+                    "x": ac.lon,
+                    "y": ac.lat,
+                    "altitude": ac.alt,
+                    "groundspeed": ac.gs,
+                    "trueairspeed": ac.tas,
+                    "indicatedairspeed": ac.ias
+                }
+                json = json.dumps(acData)
+                
+                #Push Ac to WebApi 
+                r = requests.post(url, data=json)
+                #r = requests.put(url + ac.call, headers=header_contentype, auth=token, data=json)
 
-            #make sure everything is oke
-            if r == 200: 
-                print("Updated ac: " + ac.call)
-            if r > 400:
-                print("Error: Something went wrong\n" + r.content)
+                #make sure everything is oke
+                if r == 200: 
+                    logging.info("Updated ac: " + ac.call)
+                if r > 400:
+                    logging.error("Error: Something went wrong\n" + r.content)
+        except:
+            logging.error("An error acured, could not send data to api")
 
     def run(self, ac_pipe_out, exception_queue):
         local_buffer = []
