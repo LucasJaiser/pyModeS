@@ -85,7 +85,7 @@ if DUMPTO is not None:
 
 
 # redirect all stdout to null, avoiding messing up with the screen
-sys.stdout = open(os.devnull, "w")
+#sys.stdout = open(os.devnull, "w")
 
 
 raw_pipe_in, raw_pipe_out = multiprocessing.Pipe()

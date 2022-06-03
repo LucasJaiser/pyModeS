@@ -3,6 +3,8 @@ import time
 import datetime
 import csv
 import pyModeS as pms
+import numpy as np
+import traceback
 
 
 class Decode:
@@ -261,6 +263,81 @@ class Decode:
         """all aircraft that are stored in memory"""
         acs = self.acs
         return acs
+    
+    def push_acs_to_WebServer(self, ac, icao):
+
+        url = "https://elitetigersradar.z4p.de/flights"
+        #token = "asdasdasdasd"
+        #headers = {'Authorization': token, 'Content-Type': 'application/json'}
+        header_contentype = {'Content-Type': 'application/json'}
+        call = None #Aircraft name
+        lon = None #Longitude
+        lat = None #Latitude
+        alt = None #Altitude
+        gs = None #Beschleunigung
+        tas = None #true Air Speed
+        ias = None #indecated Airspeed
+        #roc = rate of Climb
+        #trk = direction wich the airplane is going
+        #hdg = where the Aircraft is heading
+
+        try:
+            if "call" in ac:
+                call = ac["call"]
+            else:
+                call = ""
+            if "lon" in ac:
+                lon = ac["lon"]
+            else:
+                lon = 0
+            if "lat" in ac:
+                lat = ac["lat"]
+            else:
+                lat = 0
+            if "alt" in ac:
+                alt = ac["alt"]
+            else:
+                alt = 0
+            if "gs" in ac:
+                gs = ac["gs"]
+            else:
+                gs = 0
+            if "tas" in ac:
+                tas = ac["tas"]
+            else:
+                tas = 0
+            if "ias" in ac:
+                ias = ac["ias"]
+            else:
+                ias = 0
+
+            if lon != None and lat != None:
+                #Convert Acs to JSON
+                acData = {
+                    "icao": icao,
+                    "callsign": call,
+                    "x": lon,
+                    "y": lat,
+                    "altitude": alt,
+                    "groundspeed": gs,
+                    "trueairspeed": tas,
+                    "indicatedairspeed": ias
+                }
+                jsonData = json.dumps(acData)
+                #Push Ac to WebApi 
+                r = requests.post(url, headers=header_contentype, data=jsonData)
+                #r = requests.put(url + ac.call, headers=header_contentype, auth=token, data=json)
+                #make sure everything is oke
+                if r.status_code == 200: 
+                    logging.info("Updated")
+                if r.status_code > 400:
+                    logging.error(r.content)
+
+        except Exception as e:
+            tb = traceback.format_exc()
+            exception_queue.put(tb)
+            time.sleep(0.1)
+            raise e
 
     def run(self, raw_pipe_out, ac_pipe_in, exception_queue):
         local_buffer = []
@@ -281,8 +358,15 @@ class Decode:
 
                 acs = self.get_aircraft()
                 ac_pipe_in.send(acs)
+                #icaos = np.array(list(self.acs.keys()))
+                #icaos = np.sort(icaos)
+                #for icao in icaos:    
+                #    self.push_acs_to_WebServer(acs[icao], icaos)
+
+                #print("upliad")
                 time.sleep(0.001)
 
             except Exception as e:
                 tb = traceback.format_exc()
                 exception_queue.put((e, tb))
+
