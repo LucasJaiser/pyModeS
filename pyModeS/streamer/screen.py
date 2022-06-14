@@ -106,8 +106,6 @@ class Screen(object):
                 tas = 0
             if "ias" in ac:
                 ias = ac["ias"]
-            print(ac)
-
             else:
                 ias = 0
 
