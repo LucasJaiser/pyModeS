@@ -74,40 +74,55 @@ class Screen(object):
         gs = None #Beschleunigung
         tas = None #true Air Speed
         ias = None #indecated Airspeed
-        hdg = None
         #roc = rate of Climb
-        #trk = direction wich the airplane is going
-        #hdg = where the Aircraft is heading
+        trk = None #direction wich the airplane is going True track angle (deg)
+        hdg = None #where the Aircraft is heading Magnetic heading (deg)
 
         try:
             if "call" in ac:
                 call = ac["call"]
             else:
                 call = ""
+
             if "lon" in ac:
                 lon = ac["lon"]
             else:
                 lon = 0
+
             if "lat" in ac:
                 lat = ac["lat"]
             else:
                 lat = 0
+
             if "alt" in ac:
                 alt = ac["alt"]
             else:
                 alt = 0
+
             if "gs" in ac:
                 gs = ac["gs"]
             else:
                 gs = 0
+
             if "tas" in ac:
                 tas = ac["tas"]
             else:
                 tas = 0
+
             if "ias" in ac:
                 ias = ac["ias"]
             else:
                 ias = 0
+
+            if "trk" in ac:
+                trk = ac["trk"]
+            else:
+                trk = 0
+
+            if "hdg" in ac:
+                hdg = ac["hdg"]
+            else:
+                hdg = 0
 
             if lon != None and lat != None:
                 #Convert Acs to JSON
@@ -119,7 +134,9 @@ class Screen(object):
                     "altitude": alt,
                     "groundspeed": gs,
                     "trueairspeed": tas,
-                    "indicatedairspeed": ias
+                    "indicatedairspeed": ias,
+                    "trackangle": trk,
+                    "magneticheading": hdg
                 }
                 jsonData = json.dumps(acData)
                 #Push Ac to WebApi 
