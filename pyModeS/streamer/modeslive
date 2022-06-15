@@ -130,7 +130,7 @@ def shutdown():
     sender_process.join()
 
 
-def close_all(inc_signal):
+def close_all(inc_signal, frame):
     print("KeyboardInterrupt (ID: {}). Cleaning up...".format(inc_signal))
     shutdown()
     sys.exit(0)
