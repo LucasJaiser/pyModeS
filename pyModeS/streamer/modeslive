@@ -113,7 +113,7 @@ decode_process = multiprocessing.Process(
     target=decode.run, args=(raw_pipe_out, ac_pipe_in, exception_queue)
 )
 
-sender = Sender(url="URL", polling_interval=POLLING_INTERVAL)
+sender = Sender(url=SERVER_URL, polling_interval=POLLING_INTERVAL)
 sender_process = multiprocessing.Process(
     target=sender.run, args=(ac_pipe_out, exception_queue)
 )
