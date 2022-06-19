@@ -3,6 +3,8 @@ import json
 import logging
 import time
 import traceback
+from getmac import get_mac_address
+from pyModeS.extra.gps import Gps
 
 import requests
 
@@ -13,6 +15,7 @@ class Sender(object):
         self.server_url = url
         self.polling_interval = polling_interval
         self.acs = {}
+        self.gps = Gps()
 
     def send_data(self, exception_queue):
         if len(self.acs) == 0:
@@ -22,6 +25,8 @@ class Sender(object):
         for icao, ac in self.acs.items():
             if not ac.get("lat") or not ac.get("lon"):
                 continue
+
+            lat, lon = self.gps.get_current_position()
 
             ac_data = {
                 "icao": icao,
@@ -33,7 +38,12 @@ class Sender(object):
                 "trueairspeed": ac.get("tas", 0),
                 "indicatedairspeed": ac.get("ias", 0),
                 "trackangle": ac.get("trk", 0),
-                "magneticheading": ac.get("hdg", 0)
+                "magneticheading": ac.get("hdg", 0),
+                "station": {
+                    "mac": get_mac_address().replace(':', '').upper(),
+                    "x": lat,
+                    "y": lon
+                }
             }
 
             try:
