@@ -4,13 +4,11 @@ import os
 import sys
 import time
 import argparse
-import curses
 import signal
 import multiprocessing
 from pyModeS.streamer.decode import Decode
-from pyModeS.streamer.screen import Screen
+from pyModeS.streamer.sender import Sender
 from pyModeS.streamer.source import NetSource, RtlSdrSource
-
 
 support_rawtypes = ["raw", "beast", "skysense"]
 
@@ -20,6 +18,18 @@ parser.add_argument(
     help='Choose data source, "rtlsdr" or "net"',
     required=True,
     default="net",
+)
+parser.add_argument(
+    "--server_url",
+    help='Define the url of the webserver',
+    required=True,
+    default="http://localhost:8080",
+)
+parser.add_argument(
+    "--polling_interval",
+    help='Define the polling and sending interval (sec) for feeding the data to the webserver, default 1',
+    required=False,
+    default=1,
 )
 parser.add_argument(
     "--connect",
@@ -56,6 +66,8 @@ parser.add_argument(
 args = parser.parse_args()
 
 SOURCE = args.source
+SERVER_URL = args.server_url
+POLLING_INTERVAL = args.polling_interval
 LATLON = args.latlon
 UNCERTAINTY = args.uncertainty
 DUMPTO = args.dumpto
@@ -83,11 +95,6 @@ if DUMPTO is not None:
         print("Error: dump folder (%s) does not exist" % DUMPTO)
         sys.exit(1)
 
-
-# redirect all stdout to null, avoiding messing up with the screen
-#sys.stdout = open(os.devnull, "w")
-
-
 raw_pipe_in, raw_pipe_out = multiprocessing.Pipe()
 ac_pipe_in, ac_pipe_out = multiprocessing.Pipe()
 exception_queue = multiprocessing.Queue()
@@ -97,54 +104,49 @@ if SOURCE == "net":
     source = NetSource(host=SERVER, port=PORT, rawtype=DATATYPE)
 elif SOURCE == "rtlsdr":
     source = RtlSdrSource()
-
-
 recv_process = multiprocessing.Process(
     target=source.run, args=(raw_pipe_in, stop_flag, exception_queue)
 )
-
 
 decode = Decode(latlon=LATLON, dumpto=DUMPTO)
 decode_process = multiprocessing.Process(
     target=decode.run, args=(raw_pipe_out, ac_pipe_in, exception_queue)
 )
 
-screen = Screen(uncertainty=UNCERTAINTY)
-screen_process = multiprocessing.Process(
-    target=screen.run, args=(ac_pipe_out, exception_queue)
+sender = Sender(url=SERVER_URL, polling_interval=POLLING_INTERVAL)
+sender_process = multiprocessing.Process(
+    target=sender.run, args=(ac_pipe_out, exception_queue)
 )
 
 
 def shutdown():
     stop_flag.value = True
-    curses.endwin()
     sys.stdout = sys.__stdout__
     recv_process.terminate()
     decode_process.terminate()
-    screen_process.terminate()
+    sender_process.terminate()
     recv_process.join()
     decode_process.join()
-    screen_process.join()
+    sender_process.join()
 
 
-def closeall(signal, frame):
-    print("KeyboardInterrupt (ID: {}). Cleaning up...".format(signal))
+def close_all(inc_signal, frame):
+    print("KeyboardInterrupt (ID: {}). Cleaning up...".format(inc_signal))
     shutdown()
     sys.exit(0)
 
 
-signal.signal(signal.SIGINT, closeall)
+signal.signal(signal.SIGINT, close_all)
 
 recv_process.start()
 decode_process.start()
-screen_process.start()
-
+sender_process.start()
 
 while True:
     if (
         (not recv_process.is_alive())
         or (not decode_process.is_alive())
-        or (not screen_process.is_alive())
+        or (not sender_process.is_alive())
     ):
         shutdown()
         while not exception_queue.empty():
