@@ -26,7 +26,7 @@ class Sender(object):
             if not ac.get("lat") or not ac.get("lon"):
                 continue
 
-            lat, lon = self.gps.get_current_position()
+            current_position = self.gps.get_current_position()
 
             ac_data = {
                 "icao": icao,
@@ -41,8 +41,8 @@ class Sender(object):
                 "magneticheading": ac.get("hdg", 0),
                 "station": {
                     "mac": get_mac_address().replace(':', '').upper(),
-                    "x": lat,
-                    "y": lon
+                    "x": current_position[0],
+                    "y": current_position[1]
                 }
             }
 
@@ -58,6 +58,8 @@ class Sender(object):
                 raise e
 
     def run(self, ac_pipe_out, exception_queue):
+        self.gps.start()  # start gps polling
+        
         local_buffer = []
         while True:
             try:
