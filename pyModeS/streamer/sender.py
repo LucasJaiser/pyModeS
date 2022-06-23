@@ -15,9 +15,8 @@ class Sender(object):
         self.server_url = url
         self.polling_interval = polling_interval
         self.acs = {}
-        self.gps = Gps()
 
-    def send_data(self, exception_queue):
+    def send_data(self, exception_queue, current_position):
         if len(self.acs) == 0:
             return
 
@@ -26,19 +25,17 @@ class Sender(object):
             if not ac.get("lat") or not ac.get("lon"):
                 continue
 
-            current_position = self.gps.get_current_position()
-
             ac_data = {
                 "icao": icao,
-                "callsign": ac.get("call", ""),
+                "callsign": ac.get("call", "") or '',
                 "x": ac.get("lon"),
                 "y": ac.get("lat"),
-                "altitude": ac.get("alt", 0),
-                "groundspeed": ac.get("gs", 0),
-                "trueairspeed": ac.get("tas", 0),
-                "indicatedairspeed": ac.get("ias", 0),
-                "trackangle": ac.get("trk", 0),
-                "magneticheading": ac.get("hdg", 0),
+                "altitude": ac.get("alt", 0) or 0,
+                "groundspeed": ac.get("gs", 0) or 0,
+                "trueairspeed": ac.get("tas", 0) or 0,
+                "indicatedairspeed": ac.get("ias", 0) or 0,
+                "trackangle": ac.get("trk", 0) or 0,
+                "magneticheading": ac.get("hdg", 0) or 0,
                 "station": {
                     "mac": get_mac_address().replace(':', '').upper(),
                     "x": current_position[0],
@@ -58,7 +55,8 @@ class Sender(object):
                 raise e
 
     def run(self, ac_pipe_out, exception_queue):
-        self.gps.start()  # start gps polling
+        gps = Gps()
+        gps.start()
         
         local_buffer = []
         while True:
@@ -71,7 +69,7 @@ class Sender(object):
                     self.acs = msg
 
                 local_buffer.clear()
-                self.send_data(exception_queue)
+                self.send_data(exception_queue, gps.get_current_position())
 
             except Exception as e:
                 trace_exc = traceback.format_exc()

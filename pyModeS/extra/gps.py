@@ -4,6 +4,7 @@ import serial
 import threading
 import time
 import re
+import logging
 
 
 def convert_to_degrees(raw_value):
@@ -11,7 +12,7 @@ def convert_to_degrees(raw_value):
     degrees = int(decimal_value)
     mm_mmmm = (decimal_value - degrees) / 0.6
     position = degrees + mm_mmmm
-    return '%.4f' % position
+    return '%.3f' % position
 
 
 class Gps(threading.Thread):
@@ -24,36 +25,49 @@ class Gps(threading.Thread):
        return self.current_position
     
     def run(self):
-       try:
+        try:
             while True:
                 data = str(self.serial_port.readline())  # read NMEA string for serial interface
                 if not data:
                     continue
                 
-                nmea_msg_buffer = data.split(',')
-                nmea_sentence = nmea_msg_buffer[0]
+                try:
+                    nmea_msg_buffer = data.split(',')
+                    nmea_sentence = nmea_msg_buffer[0]
+                except Exception as e:
+                    continue   
                 
                 # GGA – Global positioning system (GPS) fix data
                 # $GNGGA,185833.80,4808.7402397,N,01133.9325039,E,5,15,1.1,470.50,M,45.65,M,,*75
                 # lat [2] lon [4]
                 if re.search('\$G[P|N]GGA', nmea_sentence, re.IGNORECASE):# GGA: $G[P/N]GGA
+                    if len(nmea_msg_buffer) < 5:
+                        continue
                     if not nmea_msg_buffer[2] or not nmea_msg_buffer[4]:
                         continue
                     
-                    nmea_latitude = float(nmea_msg_buffer[2])  # extract latitude from GGA string
-                    nmea_longitude = float(nmea_msg_buffer[4])  # extract longitude from GGA string
-                    self.current_value = (convert_to_degrees(nmea_latitude), convert_to_degrees(nmea_longitude))
+                    try:
+                        nmea_latitude = float(nmea_msg_buffer[2])  # extract latitude from GGA string
+                        nmea_longitude = float(nmea_msg_buffer[4])  # extract longitude from GGA string
+                        self.current_position = (convert_to_degrees(nmea_latitude), convert_to_degrees(nmea_longitude))
+                    except Exception as e:
+                        continue
 
                 
                 # RMC – Recommended minimum specific GNSS data
                 # $GNRMC,185823.40,A,4808.7402374,N,01133.9324760,E,0.00,112.64,130117,3.00,E,A*14
                 # lat [3] lon [5]
                 elif re.search('\$G[P|N]RMC', nmea_sentence, re.IGNORECASE): # RMC: $G[P/N]RMC
+                    if len(nmea_msg_buffer) < 6:
+                        continue
                     if not nmea_msg_buffer[3] or not nmea_msg_buffer[5]:
                         continue
                     
-                    nmea_latitude = float(nmea_msg_buffer[3])  # extract latitude from RMC string
-                    nmea_longitude = float(nmea_msg_buffer[5])  # extract longitude from RMC string
-                    self.current_value = (convert_to_degrees(nmea_latitude), convert_to_degrees(nmea_longitude))
-       except StopIteration:
+                    try:
+                        nmea_latitude = float(nmea_msg_buffer[3])  # extract latitude from RMC string
+                        nmea_longitude = float(nmea_msg_buffer[5])  # extract longitude from RMC string
+                        self.current_position = (convert_to_degrees(nmea_latitude), convert_to_degrees(nmea_longitude))
+                    except Exception as e:
+                        continue
+        except StopIteration:
             pass

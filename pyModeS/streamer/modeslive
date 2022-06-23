@@ -138,6 +138,7 @@ def close_all(inc_signal, frame):
 
 signal.signal(signal.SIGINT, close_all)
 
+
 recv_process.start()
 decode_process.start()
 sender_process.start()
