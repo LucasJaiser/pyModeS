@@ -45,14 +45,22 @@ class Sender(object):
 
             try:
                 json_data = json.dumps(ac_data)
-                response = requests.post(self.server_url, headers=headers, data=json_data)
-                if response.status_code > 400:
-                    logging.error(response.content)
             except Exception as e:
+                logging.error(e)
                 trace_exc = traceback.format_exc()
                 exception_queue.put(trace_exc)
                 time.sleep(0.1)
-                raise e
+            
+            try:
+                response = requests.post(self.server_url, headers=headers, data=json_data)
+                if response.status_code > 400:
+                    logging.error(response.content)
+            except requests.exceptions.ConnectionError as con_err:
+                logging.error(con_err)
+                trace_exc = traceback.format_exc()
+                exception_queue.put(trace_exc)
+                time.sleep(0.1)
+                
 
     def run(self, ac_pipe_out, exception_queue):
         gps = Gps()
