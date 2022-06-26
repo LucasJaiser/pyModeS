@@ -75,8 +75,11 @@ class RtlReader(object):
                 frame_end = i + pbits * 2 + (fbits + 1) * 2
                 frame_length = (fbits + 1) * 2
                 frame_pulses = self.signal_buffer[frame_start:frame_end]
-
-                threshold = max(frame_pulses) * 0.2
+                
+                if len(frame_pulses):
+                    threshold = max(frame_pulses) * 0.2
+                else:
+                    continue
 
                 msgbin = []
                 for j in range(0, frame_length, 2):
